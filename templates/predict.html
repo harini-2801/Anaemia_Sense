@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- Jinja Variables Setup -->
+    <!-- Jinja Reference Ranges Configuration -->
     {% if gender == 0 %}
         {% set hb_min, hb_max = 13.8, 17.2 %}
     {% else %}
@@ -24,17 +24,21 @@
     {% set mchc_min, mchc_max = 32.0, 36.0 %}
     {% set mchc_status = 'low' if mchc < mchc_min else ('high' if mchc > mchc_max else 'normal') %}
 
-    <!-- Gauges Position Computations -->
-    {% set hb_pct = (((hemoglobin - 5.0) / 15.0) * 100.0) | round | int %}
+    <!-- Check for elevated or low values -->
+    {% set has_high_metrics = (hb_status == 'high' or mcv_status == 'high' or mch_status == 'high' or mchc_status == 'high') %}
+    {% set has_low_metrics = (hb_status == 'low' or mcv_status == 'low' or mch_status == 'low' or mchc_status == 'low') %}
+
+    <!-- Gauges Position Percentages -->
+    {% set hb_pct = (((hemoglobin - 5.0) / 18.0) * 100.0) | round | int %}
     {% set hb_pct = 0 if hb_pct < 0 else (100 if hb_pct > 100 else hb_pct) %}
 
-    {% set mcv_pct = (((mcv - 50.0) / 70.0) * 100.0) | round | int %}
+    {% set mcv_pct = (((mcv - 40.0) / 90.0) * 100.0) | round | int %}
     {% set mcv_pct = 0 if mcv_pct < 0 else (100 if mcv_pct > 100 else mcv_pct) %}
 
-    {% set mch_pct = (((mch - 15.0) / 30.0) * 100.0) | round | int %}
+    {% set mch_pct = (((mch - 10.0) / 35.0) * 100.0) | round | int %}
     {% set mch_pct = 0 if mch_pct < 0 else (100 if mch_pct > 100 else mch_pct) %}
 
-    {% set mchc_pct = (((mchc - 25.0) / 15.0) * 100.0) | round | int %}
+    {% set mchc_pct = (((mchc - 20.0) / 25.0) * 100.0) | round | int %}
     {% set mchc_pct = 0 if mchc_pct < 0 else (100 if mchc_pct > 100 else mchc_pct) %}
 
     <div class="container">
@@ -45,38 +49,81 @@
                 <h1>Anaemia Sense</h1>
             </div>
             <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme">
-                <span class="theme-icon">🌙</span>
-                <span class="theme-text">Dark Mode</span>
+                <span class="theme-icon">☀️</span>
+                <span class="theme-text">Light Mode</span>
             </button>
         </header>
 
-        <!-- Prediction Outcome Banner -->
+        <!-- Dynamic Results Hero section -->
         {% if is_anemic == 1 %}
-        <div class="result-hero anemic">
-            <div class="result-icon">⚠️</div>
-            <h2 class="result-title">Anemia Risk Detected</h2>
-            <p class="result-desc">Based on the calculations, your parameters align with markers for <strong>anemic conditions</strong>. This prediction is generated using a Gradient Boosting Classifier trained on medical indices.</p>
-            <a href="/" class="back-link">
-                <span>↩️</span> Re-Run Assessment
-            </a>
-        </div>
+            <!-- Case 1: Anemic Profile -->
+            <div class="result-hero anemic">
+                <div class="result-icon">⚠️</div>
+                <h2 class="result-title">Anemia Risk Detected</h2>
+                <p class="result-desc">The Gradient Boosting Classifier has identified physiological markers consistent with <strong>anemic conditions</strong>. Hemoglobin levels are low relative to sex reference intervals.</p>
+                
+                <!-- Detailed Subtype Alerts based on MCV -->
+                {% if mcv < 80 %}
+                <div class="subtype-alert-box">
+                    <h4>🔬 Classification: Microcytic Anemia Profile (MCV: {{ mcv }} fL)</h4>
+                    <p>Your red blood cells are smaller than normal. The most common cause is **Iron Deficiency Anemia** or **Thalassemia**. Prioritize iron-rich foods and Vitamin C to enhance absorption.</p>
+                </div>
+                {% elif mcv > 100 %}
+                <div class="subtype-alert-box">
+                    <h4>🔬 Classification: Macrocytic Anemia Profile (MCV: {{ mcv }} fL)</h4>
+                    <p>Your red blood cells are larger than normal. This is typical of megaloblastic anemias, commonly caused by **Vitamin B12 or Folate (Vitamin B9) deficiencies**. Focus on eggs, dairy, and leafy green veggies.</p>
+                </div>
+                {% else %}
+                <div class="subtype-alert-box">
+                    <h4>🔬 Classification: Normocytic Anemia Profile (MCV: {{ mcv }} fL)</h4>
+                    <p>Your red blood cells are of normal size, but overall count or hemoglobin is low. Typical causes include **acute blood loss, anemia of chronic disease, or hemolysis**. Consult a doctor to determine the root cause.</p>
+                </div>
+                {% endif %}
+                
+                <a href="/" class="back-link" style="margin-top: 25px;">
+                    <span>↩️</span> Run New Assessment
+                </a>
+            </div>
         {% else %}
-        <div class="result-hero healthy">
-            <div class="result-icon">✓</div>
-            <h2 class="result-title">Normal Assessment Profile</h2>
-            <p class="result-desc">Great news! Based on the calculations, your parameters reside within <strong>healthy reference ranges</strong>, indicating no present signs of anemic disease.</p>
-            <a href="/" class="back-link">
-                <span>↩️</span> Re-Run Assessment
-            </a>
-        </div>
+            {% if has_high_metrics %}
+                <!-- Case 2: No Anemia, but Elevated Metrics (Polycythemia Warning) -->
+                <div class="result-hero elevated">
+                    <div class="result-icon">📈</div>
+                    <h2 class="result-title">No Anemia (Elevated Metrics)</h2>
+                    <p class="result-desc">The classifier did not detect anemia (hemoglobin is not low). However, <strong>one or more of your blood parameters are elevated</strong> above healthy reference limits. This could indicate dehydration, polycythemia, or other conditions. We recommend having these elevated metrics reviewed by a doctor.</p>
+                    <a href="/" class="back-link" style="margin-top: 20px;">
+                        <span>↩️</span> Run New Assessment
+                    </a>
+                </div>
+            {% elif has_low_metrics %}
+                <!-- Case 3: No Anemia, but Borderline Low Metrics -->
+                <div class="result-hero borderline">
+                    <div class="result-icon">📉</div>
+                    <h2 class="result-title">No Anemia (Borderline Low)</h2>
+                    <p class="result-desc">The model did not find sufficient evidence of anemic disease. However, <strong>some parameters are borderline low</strong>. We recommend monitoring your diet (iron, B12, folate intake) to prevent progress toward anemic states.</p>
+                    <a href="/" class="back-link" style="margin-top: 20px;">
+                        <span>↩️</span> Run New Assessment
+                    </a>
+                </div>
+            {% else %}
+                <!-- Case 4: Completely Healthy Normal Profile -->
+                <div class="result-hero healthy">
+                    <div class="result-icon">✓</div>
+                    <h2 class="result-title">Normal Assessment Profile</h2>
+                    <p class="result-desc">Excellent! Your laboratory indexes reside completely within <strong>healthy reference ranges</strong>. The classifier finds no present indicators of anemic disease.</p>
+                    <a href="/" class="back-link" style="margin-top: 20px;">
+                        <span>↩️</span> Run New Assessment
+                    </a>
+                </div>
+            {% endif %}
         {% endif %}
 
         <!-- Metrics Comparison Dashboard -->
         <section class="metrics-comparison">
-            <h3 class="metrics-title">📊 Individual Parameter Comparison</h3>
+            <h3 class="metrics-title">📊 Parameter Range Gauges</h3>
             <div class="metrics-grid">
                 
-                <!-- Hemoglobin Card -->
+                <!-- Hemoglobin Gauge -->
                 <div class="metric-gauge-card">
                     <span class="metric-name">Hemoglobin</span>
                     <div class="metric-value-box">
@@ -90,9 +137,9 @@
                     <span class="metric-range-info">Ref: {{ hb_min }} - {{ hb_max }} g/dL</span>
                 </div>
 
-                <!-- MCV Card -->
+                <!-- MCV Gauge -->
                 <div class="metric-gauge-card">
-                    <span class="metric-name">MCV</span>
+                    <span class="metric-name">MCV (Cell Size)</span>
                     <div class="metric-value-box">
                         <span class="metric-value">{{ mcv }}</span>
                         <span class="metric-unit">fL</span>
@@ -104,7 +151,7 @@
                     <span class="metric-range-info">Ref: {{ mcv_min }} - {{ mcv_max }} fL</span>
                 </div>
 
-                <!-- MCH Card -->
+                <!-- MCH Gauge -->
                 <div class="metric-gauge-card">
                     <span class="metric-name">MCH</span>
                     <div class="metric-value-box">
@@ -118,7 +165,7 @@
                     <span class="metric-range-info">Ref: {{ mch_min }} - {{ mch_max }} pg</span>
                 </div>
 
-                <!-- MCHC Card -->
+                <!-- MCHC Gauge -->
                 <div class="metric-gauge-card">
                     <span class="metric-name">MCHC</span>
                     <div class="metric-value-box">
@@ -135,67 +182,96 @@
             </div>
         </section>
 
-        <!-- Dynamic Actionable Advice -->
+        <!-- Recommendations Block -->
         <section class="card">
             <h3 class="card-title">
-                <span>🍏</span> Recommendation & Guidance
+                <span>🍏</span> Personalized Dietary & Health Advice
             </h3>
             
             {% if is_anemic == 1 %}
-            <p>Your blood indices indicate that the red blood cells may not have optimal size or hemoglobin concentration. Here are actionable tips to discuss with your healthcare provider:</p>
-            <div class="health-tips-grid">
-                <div class="health-tip-card">
-                    <h5>🥩 Iron-Rich Foods</h5>
-                    <p>Incorporate heme iron (red meat, poultry, seafood) and non-heme iron (spinach, lentils, fortified cereals, pumpkin seeds) into your daily meals.</p>
+                {% if mcv < 80 %}
+                <!-- Microcytic Advice -->
+                <p>Your profile suggests microcytic anemia, most commonly caused by iron deficiency. Consider these nutritional steps:</p>
+                <div class="health-tips-grid">
+                    <div class="health-tip-card">
+                        <h5>🥩 Heme Iron Sources</h5>
+                        <p>Increase intake of red meat, poultry, liver, and fish. These contain heme iron, which is absorbed 3-4 times better by your body than plant iron.</p>
+                    </div>
+                    <div class="health-tip-card">
+                        <h5>🍊 Vitamin C Synergy</h5>
+                        <p>When eating plant iron (beans, spinach, grains), consume Vitamin C (oranges, tomatoes, bell peppers) in the same meal to double iron absorption.</p>
+                    </div>
                 </div>
-                <div class="health-tip-card">
-                    <h5>🍊 Vitamin C Intake</h5>
-                    <p>Pair iron-rich foods with Vitamin C (citrus fruits, bell peppers, broccoli) to significantly enhance non-heme iron absorption in your gut.</p>
+                {% elif mcv > 100 %}
+                <!-- Macrocytic Advice -->
+                <p>Your profile suggests macrocytic anemia, commonly related to B12 or folate deficiency. Consider these actions:</p>
+                <div class="health-tips-grid">
+                    <div class="health-tip-card">
+                        <h5>🥛 Vitamin B12 Foods</h5>
+                        <p>Consume animal products like eggs, cheese, meat, fish, or fortified cereals. B12 is essential for normal red blood cell maturation.</p>
+                    </div>
+                    <div class="health-tip-card">
+                        <h5>🥑 Folate (B9) Foods</h5>
+                        <p>Add lentils, spinach, brussels sprouts, avocados, and asparagus to your diet to support cellular division and RBC synthesis.</p>
+                    </div>
                 </div>
-                <div class="health-tip-card">
-                    <h5>🥦 B12 and Folate</h5>
-                    <p>If your MCV index is high (Macro-cytic), prioritize vitamin B12 (eggs, dairy, fortified yeast) and folate (leafy greens, avocado, beans).</p>
+                {% else %}
+                <!-- Normocytic Advice -->
+                <p>Your profile suggests normocytic anemia. While maintaining a balanced diet is important, normocytic anemia is often caused by external factors:</p>
+                <div class="health-tips-grid">
+                    <div class="health-tip-card">
+                        <h5>🛡️ Check for Chronic Conditions</h5>
+                        <p>Normocytic anemia can be linked to chronic inflammation, kidney disease, or blood loss. Share these lab values with a doctor.</p>
+                    </div>
+                    <div class="health-tip-card">
+                        <h5>🥗 General Blood Support</h5>
+                        <p>Maintain general intake of proteins, iron, B-vitamins, and trace minerals to support bone marrow function.</p>
+                    </div>
                 </div>
-                <div class="health-tip-card">
-                    <h5>⚠️ Avoid Inhibitors</h5>
-                    <p>Avoid drinking tea, coffee, or consuming high-calcium meals directly alongside iron-rich meals, as they inhibit iron absorption.</p>
-                </div>
-            </div>
+                {% endif %}
             {% else %}
-            <p>Your blood metrics are stable! Keep up your healthy lifestyle with these maintenance recommendations:</p>
-            <div class="health-tips-grid">
-                <div class="health-tip-card">
-                    <h5>🥗 Balanced Diet</h5>
-                    <p>Maintain a diet consisting of diverse nutrients, focusing on leafy vegetables, lean proteins, and whole grains to support red blood cell generation.</p>
+                {% if has_high_metrics %}
+                <!-- Elevated Metrics Advice -->
+                <p>Although you do not have anemia, your blood parameters are elevated. Prioritize these steps:</p>
+                <div class="health-tips-grid">
+                    <div class="health-tip-card">
+                        <h5>💧 Address Dehydration</h5>
+                        <p>Dehydration decreases plasma volume, causing a relative increase in hemoglobin concentration. Drink plenty of water and re-test.</p>
+                    </div>
+                    <div class="health-tip-card">
+                        <h5>🩺 Medical Consultation</h5>
+                        <p>Consistently elevated parameters can be linked to polycythemia or respiratory conditions. A clinical review is recommended.</p>
+                    </div>
                 </div>
-                <div class="health-tip-card">
-                    <h5>💧 Stay Hydrated</h5>
-                    <p>Drinking plenty of water supports general blood volume, cell function, and nutrient transport throughout the vascular system.</p>
+                {% else %}
+                <!-- Completely Normal Advice -->
+                <p>Your blood indices are completely stable! Keep up your healthy lifestyle with these wellness guidelines:</p>
+                <div class="health-tips-grid">
+                    <div class="health-tip-card">
+                        <h5>🥗 Varied Whole Foods</h5>
+                        <p>Focus on maintaining a diverse diet rich in minerals and vitamins (spinach, eggs, citrus fruits, lean proteins) to support ongoing blood cell production.</p>
+                    </div>
+                    <div class="health-tip-card">
+                        <h5>🏃 Cardiovascular Health</h5>
+                        <p>Regular aerobic exercise stimulates circulation and naturally prompts the bone marrow to generate high-quality, healthy blood cells.</p>
+                    </div>
                 </div>
-                <div class="health-tip-card">
-                    <h5>🏃 Regular Activity</h5>
-                    <p>Engaging in cardiovascular exercise stimulates blood circulation and signals the bone marrow to produce healthy red blood cells.</p>
-                </div>
-                <div class="health-tip-card">
-                    <h5>🩺 Periodic Checkups</h5>
-                    <p>Schedule annual blood panels (Complete Blood Count) to monitor your indexes and capture potential physiological changes early.</p>
-                </div>
-            </div>
+                {% endif %}
             {% endif %}
             
             <p class="warning-disclaimer">
-                <strong>Disclaimer:</strong> This application is a machine learning screening tool and is NOT a substitute for professional clinical diagnosis. Always consult with a qualified hematologist or doctor for diagnosis and treatment plans.
+                <strong>Disclaimer:</strong> This application is a machine learning screening tool and is NOT a substitute for professional clinical diagnosis. Always consult with a qualified physician or hematologist to interpret laboratory findings.
             </p>
         </section>
 
-        <!-- Data Visualization Gallery Section -->
+        <!-- Dataset Analytics Gallery -->
         <section class="gallery-section">
             <div class="gallery-header">
-                <h3>📊 Model Dataset Visualization Hub</h3>
+                <h3>📊 Dataset Overview & Graphics</h3>
                 <div class="gallery-tabs">
-                    <button class="tab-btn active" data-tab="tab-dataset">Dataset Profile</button>
+                    <button class="tab-btn active" data-tab="tab-dataset">Dataset Balance</button>
                     <button class="tab-btn" data-tab="tab-features">Biological Spread</button>
-                    <button class="tab-btn" data-tab="tab-model">Interactions & Correlation</button>
+                    <button class="tab-btn" data-tab="tab-model">Correlations</button>
                 </div>
             </div>
 
@@ -250,7 +326,7 @@
                     </div>
                 </div>
 
-                <!-- Tab 3: Model Interactions -->
+                <!-- Tab 3: Correlations -->
                 <div class="tab-content" id="tab-model">
                     <div class="visuals-container">
                         <div class="graph-image-wrapper">

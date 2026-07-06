@@ -12,7 +12,7 @@ class AnemiaSenseTestCase(unittest.TestCase):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         # Check for form controls
-        self.assertIn(b'Clinical Assessment Form', response.data)
+        self.assertIn(b'Clinical Metrics Form', response.data)
         self.assertIn(b'name="Gender"', response.data)
         self.assertIn(b'name="Hemoglobin"', response.data)
         self.assertIn(b'name="MCH"', response.data)
@@ -29,7 +29,7 @@ class AnemiaSenseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # Should contain success markers
         self.assertIn(b'Normal Assessment Profile', response.data)
-        self.assertIn(b'Individual Parameter Comparison', response.data)
+        self.assertIn(b'Parameter Range Gauges', response.data)
 
     def test_prediction_anemic(self):
         """Test anemic prediction path."""
@@ -43,7 +43,7 @@ class AnemiaSenseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # Should contain warning markers
         self.assertIn(b'Anemia Risk Detected', response.data)
-        self.assertIn(b'Iron-Rich Foods', response.data)
+        self.assertIn(b'Heme Iron Sources', response.data)
 
     def test_prediction_invalid_inputs(self):
         """Test that invalid inputs fail gracefully."""
