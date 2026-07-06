@@ -1,68 +1,285 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Prediction Result</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            background-color: #f0f0f0;
-        }
-        .result-container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            width: 500px;
-            margin: auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h2 {
-            color: #333;
-        }
-        p {
-            font-size: 18px;
-            color: #444;
-        }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #1d8ceb;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        .graphs {
-            margin-top: 40px;
-        }
-        .graphs img {
-            width: 100%;
-            max-width: 600px;
-            margin: 20px auto;
-            display: block;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anaemia Sense - Assessment Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="result-container">
-        <h2>Prediction Result</h2>
-        <p>{{ prediction_text }}</p>
-        <a href="/">Go back to form</a>
+    <!-- Jinja Variables Setup -->
+    {% if gender == 0 %}
+        {% set hb_min, hb_max = 13.8, 17.2 %}
+    {% else %}
+        {% set hb_min, hb_max = 12.1, 15.1 %}
+    {% endif %}
+    {% set hb_status = 'low' if hemoglobin < hb_min else ('high' if hemoglobin > hb_max else 'normal') %}
+    
+    {% set mcv_min, mcv_max = 80.0, 100.0 %}
+    {% set mcv_status = 'low' if mcv < mcv_min else ('high' if mcv > mcv_max else 'normal') %}
+    
+    {% set mch_min, mch_max = 27.0, 33.0 %}
+    {% set mch_status = 'low' if mch < mch_min else ('high' if mch > mch_max else 'normal') %}
+    
+    {% set mchc_min, mchc_max = 32.0, 36.0 %}
+    {% set mchc_status = 'low' if mchc < mchc_min else ('high' if mchc > mchc_max else 'normal') %}
+
+    <!-- Gauges Position Computations -->
+    {% set hb_pct = (((hemoglobin - 5.0) / 15.0) * 100.0) | round | int %}
+    {% set hb_pct = 0 if hb_pct < 0 else (100 if hb_pct > 100 else hb_pct) %}
+
+    {% set mcv_pct = (((mcv - 50.0) / 70.0) * 100.0) | round | int %}
+    {% set mcv_pct = 0 if mcv_pct < 0 else (100 if mcv_pct > 100 else mcv_pct) %}
+
+    {% set mch_pct = (((mch - 15.0) / 30.0) * 100.0) | round | int %}
+    {% set mch_pct = 0 if mch_pct < 0 else (100 if mch_pct > 100 else mch_pct) %}
+
+    {% set mchc_pct = (((mchc - 25.0) / 15.0) * 100.0) | round | int %}
+    {% set mchc_pct = 0 if mchc_pct < 0 else (100 if mchc_pct > 100 else mchc_pct) %}
+
+    <div class="container">
+        <!-- Header -->
+        <header id="app-header">
+            <div class="logo-section">
+                <span class="logo-icon">❤️</span>
+                <h1>Anaemia Sense</h1>
+            </div>
+            <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-text">Dark Mode</span>
+            </button>
+        </header>
+
+        <!-- Prediction Outcome Banner -->
+        {% if is_anemic == 1 %}
+        <div class="result-hero anemic">
+            <div class="result-icon">⚠️</div>
+            <h2 class="result-title">Anemia Risk Detected</h2>
+            <p class="result-desc">Based on the calculations, your parameters align with markers for <strong>anemic conditions</strong>. This prediction is generated using a Gradient Boosting Classifier trained on medical indices.</p>
+            <a href="/" class="back-link">
+                <span>↩️</span> Re-Run Assessment
+            </a>
+        </div>
+        {% else %}
+        <div class="result-hero healthy">
+            <div class="result-icon">✓</div>
+            <h2 class="result-title">Normal Assessment Profile</h2>
+            <p class="result-desc">Great news! Based on the calculations, your parameters reside within <strong>healthy reference ranges</strong>, indicating no present signs of anemic disease.</p>
+            <a href="/" class="back-link">
+                <span>↩️</span> Re-Run Assessment
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Metrics Comparison Dashboard -->
+        <section class="metrics-comparison">
+            <h3 class="metrics-title">📊 Individual Parameter Comparison</h3>
+            <div class="metrics-grid">
+                
+                <!-- Hemoglobin Card -->
+                <div class="metric-gauge-card">
+                    <span class="metric-name">Hemoglobin</span>
+                    <div class="metric-value-box">
+                        <span class="metric-value">{{ hemoglobin }}</span>
+                        <span class="metric-unit">g/dL</span>
+                    </div>
+                    <div class="metric-slider-track">
+                        <div class="metric-indicator" style="left: {{ hb_pct }}%;"></div>
+                    </div>
+                    <span class="metric-status-badge status-{{ hb_status }}">{{ hb_status }}</span>
+                    <span class="metric-range-info">Ref: {{ hb_min }} - {{ hb_max }} g/dL</span>
+                </div>
+
+                <!-- MCV Card -->
+                <div class="metric-gauge-card">
+                    <span class="metric-name">MCV</span>
+                    <div class="metric-value-box">
+                        <span class="metric-value">{{ mcv }}</span>
+                        <span class="metric-unit">fL</span>
+                    </div>
+                    <div class="metric-slider-track">
+                        <div class="metric-indicator" style="left: {{ mcv_pct }}%;"></div>
+                    </div>
+                    <span class="metric-status-badge status-{{ mcv_status }}">{{ mcv_status }}</span>
+                    <span class="metric-range-info">Ref: {{ mcv_min }} - {{ mcv_max }} fL</span>
+                </div>
+
+                <!-- MCH Card -->
+                <div class="metric-gauge-card">
+                    <span class="metric-name">MCH</span>
+                    <div class="metric-value-box">
+                        <span class="metric-value">{{ mch }}</span>
+                        <span class="metric-unit">pg</span>
+                    </div>
+                    <div class="metric-slider-track">
+                        <div class="metric-indicator" style="left: {{ mch_pct }}%;"></div>
+                    </div>
+                    <span class="metric-status-badge status-{{ mch_status }}">{{ mch_status }}</span>
+                    <span class="metric-range-info">Ref: {{ mch_min }} - {{ mch_max }} pg</span>
+                </div>
+
+                <!-- MCHC Card -->
+                <div class="metric-gauge-card">
+                    <span class="metric-name">MCHC</span>
+                    <div class="metric-value-box">
+                        <span class="metric-value">{{ mchc }}</span>
+                        <span class="metric-unit">g/dL</span>
+                    </div>
+                    <div class="metric-slider-track">
+                        <div class="metric-indicator" style="left: {{ mchc_pct }}%;"></div>
+                    </div>
+                    <span class="metric-status-badge status-{{ mchc_status }}">{{ mchc_status }}</span>
+                    <span class="metric-range-info">Ref: {{ mchc_min }} - {{ mchc_max }} g/dL</span>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Dynamic Actionable Advice -->
+        <section class="card">
+            <h3 class="card-title">
+                <span>🍏</span> Recommendation & Guidance
+            </h3>
+            
+            {% if is_anemic == 1 %}
+            <p>Your blood indices indicate that the red blood cells may not have optimal size or hemoglobin concentration. Here are actionable tips to discuss with your healthcare provider:</p>
+            <div class="health-tips-grid">
+                <div class="health-tip-card">
+                    <h5>🥩 Iron-Rich Foods</h5>
+                    <p>Incorporate heme iron (red meat, poultry, seafood) and non-heme iron (spinach, lentils, fortified cereals, pumpkin seeds) into your daily meals.</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>🍊 Vitamin C Intake</h5>
+                    <p>Pair iron-rich foods with Vitamin C (citrus fruits, bell peppers, broccoli) to significantly enhance non-heme iron absorption in your gut.</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>🥦 B12 and Folate</h5>
+                    <p>If your MCV index is high (Macro-cytic), prioritize vitamin B12 (eggs, dairy, fortified yeast) and folate (leafy greens, avocado, beans).</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>⚠️ Avoid Inhibitors</h5>
+                    <p>Avoid drinking tea, coffee, or consuming high-calcium meals directly alongside iron-rich meals, as they inhibit iron absorption.</p>
+                </div>
+            </div>
+            {% else %}
+            <p>Your blood metrics are stable! Keep up your healthy lifestyle with these maintenance recommendations:</p>
+            <div class="health-tips-grid">
+                <div class="health-tip-card">
+                    <h5>🥗 Balanced Diet</h5>
+                    <p>Maintain a diet consisting of diverse nutrients, focusing on leafy vegetables, lean proteins, and whole grains to support red blood cell generation.</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>💧 Stay Hydrated</h5>
+                    <p>Drinking plenty of water supports general blood volume, cell function, and nutrient transport throughout the vascular system.</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>🏃 Regular Activity</h5>
+                    <p>Engaging in cardiovascular exercise stimulates blood circulation and signals the bone marrow to produce healthy red blood cells.</p>
+                </div>
+                <div class="health-tip-card">
+                    <h5>🩺 Periodic Checkups</h5>
+                    <p>Schedule annual blood panels (Complete Blood Count) to monitor your indexes and capture potential physiological changes early.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <p class="warning-disclaimer">
+                <strong>Disclaimer:</strong> This application is a machine learning screening tool and is NOT a substitute for professional clinical diagnosis. Always consult with a qualified hematologist or doctor for diagnosis and treatment plans.
+            </p>
+        </section>
+
+        <!-- Data Visualization Gallery Section -->
+        <section class="gallery-section">
+            <div class="gallery-header">
+                <h3>📊 Model Dataset Visualization Hub</h3>
+                <div class="gallery-tabs">
+                    <button class="tab-btn active" data-tab="tab-dataset">Dataset Profile</button>
+                    <button class="tab-btn" data-tab="tab-features">Biological Spread</button>
+                    <button class="tab-btn" data-tab="tab-model">Interactions & Correlation</button>
+                </div>
+            </div>
+
+            <div class="gallery-body">
+                <!-- Tab 1: Dataset Overview -->
+                <div class="tab-content active" id="tab-dataset">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_1.png') }}" alt="Original Class Balance Chart">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Original Dataset Balance</h4>
+                            <p>This chart depicts the distribution of patients who are not affected by anemia (0, blue) versus those affected (1, green) in the primary clinical registry.</p>
+                            <p>The original dataset shows class imbalance, which can lead to biased machine learning classifiers. To resolve this, a class-balancing downsampling step was conducted prior to model fitting.</p>
+                        </div>
+                    </div>
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_2.png') }}" alt="Balanced Dataset Chart">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Balanced Dataset Profile</h4>
+                            <p>By undersampling the majority class (Result=0) to exactly match the count of the minority class (Result=1), we achieve an even distribution.</p>
+                            <p>This balanced distribution is crucial for optimizing classifier metrics such as sensitivity (recall) and precision, preventing false negatives in screening.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Feature Spread -->
+                <div class="tab-content" id="tab-features">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_4.png') }}" alt="Hemoglobin Distribution Histogram">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Hemoglobin Distribution</h4>
+                            <p>This histogram shows the distribution of hemoglobin levels across the dataset, with a kernel density estimator (KDE) curve overlay.</p>
+                            <p>Hemoglobin values form a bimodal shape representing the split between healthy and anemic populations, indicating it serves as a powerful predictive feature.</p>
+                        </div>
+                    </div>
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_5.png') }}" alt="Hemoglobin Split by Gender and Result">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Mean Hemoglobin by Gender & Result</h4>
+                            <p>This bar chart demonstrates the mean hemoglobin levels separated by biological gender (Male = 0, Female = 1) and clinical outcome (Healthy = 0, Anemic = 1).</p>
+                            <p>The numbers highlight that healthy subjects maintain a significantly higher average hemoglobin level than those flagged with anemia, validating physiological thresholds.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Model Interactions -->
+                <div class="tab-content" id="tab-model">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_7.png') }}" alt="Dataset Feature Correlation Matrix">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Correlation Heatmap</h4>
+                            <p>This heatmap represents Pearson correlation coefficients between features. Red and green intensities represent strong negative and positive relationships, respectively.</p>
+                            <p>Hemoglobin displays a very strong negative correlation with Result, indicating that lower hemoglobin levels directly drive positive anemia predictions.</p>
+                        </div>
+                    </div>
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+                    <div class="visuals-container">
+                        <div class="graph-image-wrapper">
+                            <img src="{{ url_for('static', filename='Graph_outputs/Figure_6.png') }}" alt="Pairwise Relationships Scatter Matrix">
+                        </div>
+                        <div class="graph-explanation">
+                            <h4>Pairwise Scatter Relationships</h4>
+                            <p>This comprehensive matrix shows pairwise scatter plots across all features (Gender, Hemoglobin, MCH, MCHC, MCV) and their density plots.</p>
+                            <p>This matrix reveals clustering patterns in multi-dimensional space, showing how different combinations of factors form the boundary of prediction states.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
     </div>
 
-    <div class="graphs">
-        <h2 style="text-align:center;">Data Visualizations</h2>
-        <img src="{{ url_for('static', filename='Graph_outputs/Figure_1.png') }}" alt="Graph 1">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_2.png') }}" alt="Graph 2">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_3.png') }}" alt="Graph 3">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_4.png') }}" alt="Graph 4">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_5.png') }}" alt="Graph 5">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_6.png') }}" alt="Graph 6">
-<img src="{{ url_for('static', filename='Graph_outputs/Figure_7.png') }}" alt="Graph 7">
-
-    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

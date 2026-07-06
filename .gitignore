@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Node modules & npm packages
+node_modules/
+package-lock.json
+package.json
+
+# Temporary logs and tunnel outputs
+*.log
+tunnel_url.txt
+pinggy_url.txt
+tunnel_url.txt
+tunnel_debug.log
+tunnel.js
+tunnel.py
+tunnel_ssh.js

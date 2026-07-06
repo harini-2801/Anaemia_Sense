@@ -1,63 +1,132 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Anemia Prediction</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            background-color: #f8f8f8;
-        }
-        form {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            width: 350px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            margin-bottom: 20px;
-        }
-        label, input {
-            display: block;
-            margin: 10px 0;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-        }
-        input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #1d8ceb;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anaemia Sense - Premium Diagnostics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h2>Anemia Prediction Form</h2>
-    <form action="/predict" method="post">
-        <label for="Gender">Gender (0 = Male, 1 = Female):</label>
-        <input type="text" name="Gender" required>
+    <div class="container">
+        <!-- Header -->
+        <header id="app-header">
+            <div class="logo-section">
+                <span class="logo-icon">❤️</span>
+                <h1>Anaemia Sense</h1>
+            </div>
+            <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-text">Dark Mode</span>
+            </button>
+        </header>
 
-        <label for="Hemoglobin">Hemoglobin:</label>
-        <input type="text" name="Hemoglobin" required>
+        {% if error_text %}
+        <div class="alert-message">
+            <span>⚠️</span> {{ error_text }}
+        </div>
+        {% endif %}
 
-        <label for="MCH">MCH:</label>
-        <input type="text" name="MCH" required>
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Left Card: Form -->
+            <main class="card">
+                <h2 class="card-title">
+                    <span>📋</span> Clinical Assessment Form
+                </h2>
+                
+                <form action="/predict" method="post" id="predictionForm">
+                    <!-- Gender Cards Section -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            Gender
+                            <span class="help-icon" data-tooltip="Biological sex is key to defining correct hemoglobin reference intervals.">?</span>
+                        </label>
+                        <input type="hidden" name="Gender" id="genderInput" value="0">
+                        <div class="gender-cards">
+                            <div class="gender-card selected" data-value="0" id="genderMaleCard">
+                                <svg viewBox="0 0 24 24" width="32" height="32">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                                </svg>
+                                <span>Male</span>
+                            </div>
+                            <div class="gender-card" data-value="1" id="genderFemaleCard">
+                                <svg viewBox="0 0 24 24" width="32" height="32">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                </svg>
+                                <span>Female</span>
+                            </div>
+                        </div>
+                    </div>
 
-        <label for="MCHC">MCHC:</label>
-        <input type="text" name="MCHC" required>
+                    <!-- Hemoglobin Input -->
+                    <div class="form-group">
+                        <label for="Hemoglobin" class="form-label">
+                            Hemoglobin (Hb)
+                            <span class="help-icon" data-tooltip="Total oxygen-carrying protein in blood. Norm: 13.8–17.2 g/dL (M), 12.1–15.1 g/dL (F).">?</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" step="0.01" name="Hemoglobin" id="Hemoglobin" class="input-field" placeholder="e.g. 14.2" min="1" max="25" required>
+                            <span class="input-unit">g/dL</span>
+                        </div>
+                    </div>
 
-        <label for="MCV">MCV:</label>
-        <input type="text" name="MCV" required>
+                    <!-- MCH Input -->
+                    <div class="form-group">
+                        <label for="MCH" class="form-label">
+                            Mean Corpuscular Hemoglobin (MCH)
+                            <span class="help-icon" data-tooltip="Average mass of hemoglobin inside a single red blood cell. Normal range: 27–33 pg.">?</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" step="0.01" name="MCH" id="MCH" class="input-field" placeholder="e.g. 30.5" min="5" max="50" required>
+                            <span class="input-unit">pg</span>
+                        </div>
+                    </div>
 
-        <input type="submit" value="Predict">
-    </form>
+                    <!-- MCHC Input -->
+                    <div class="form-group">
+                        <label for="MCHC" class="form-label">
+                            MCHC
+                            <span class="help-icon" data-tooltip="Average concentration of hemoglobin per unit volume of packed red cells. Normal range: 32–36 g/dL.">?</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" step="0.01" name="MCHC" id="MCHC" class="input-field" placeholder="e.g. 33.2" min="10" max="50" required>
+                            <span class="input-unit">g/dL</span>
+                        </div>
+                    </div>
+
+                    <!-- MCV Input -->
+                    <div class="form-group">
+                        <label for="MCV" class="form-label">
+                            Mean Corpuscular Volume (MCV)
+                            <span class="help-icon" data-tooltip="Average volume/size of a single red blood cell. Normal range: 80–100 fL.">?</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" step="0.01" name="MCV" id="MCV" class="input-field" placeholder="e.g. 88.5" min="30" max="150" required>
+                            <span class="input-unit">fL</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="submitBtn">Analyze Health Metrics</button>
+                </form>
+            </main>
+
+            <!-- Right Column: Info Cards -->
+            <aside class="info-section">
+                <div class="card info-card">
+                    <h3><span>ℹ️</span> About Anaemia Sense</h3>
+                    <p>Anaemia Sense is an advanced predictive screening system that utilizes machine learning classifiers to assess the risk of anemia based on complete blood count (CBC) parameters. By analyzing the relationship between hemoglobin levels and red blood cell sizing indexes (MCV, MCH, MCHC), the system screens for anomalies with high precision.</p>
+                </div>
+
+                <div class="card info-card">
+                    <h3><span>🧬</span> Understand the Parameters</h3>
+                    <p><strong>Hemoglobin:</strong> Low values are the primary indicator of anemia.</p>
+                    <p style="margin-top: 8px;"><strong>MCV:</strong> Sizing indicates whether anemia is microcytic (small cells, e.g., iron deficiency) or macrocytic (large cells, e.g., B12/folate deficiency).</p>
+                    <p style="margin-top: 8px;"><strong>MCH & MCHC:</strong> Chromicity metrics indicating the density of hemoglobin inside the cells, helping distinguish different subtypes of blood disorders.</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
-
